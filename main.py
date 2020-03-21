@@ -3,19 +3,35 @@ from pathlib import Path
 import re
 
 
-data_path = Path('logkeys.log')
-csv_path = Path('logkeys.csv')
+SEPARATOR = ' > '
 
-with data_path.open() as f:
-    data = f.readlines()
-data = filter(lambda x: not re.match(r'^\s*$', x), data)
-data = filter(lambda x: not re.match(r'^Logging.*', x), data)
-data = ''.join(data)
-data = 'timestamp > key\n' + data
-with csv_path.open('w') as f:
-    f.write(str(data))
 
-df = pd.read_csv(csv_path, sep=' > ', engine='python')
-print(df)
+def log_to_csv(path):
+    with path.open() as f:
+        data = f.readlines()
+    data = filter(lambda x: not re.match(r'^\s*$', x), data)
+    data = filter(lambda x: not re.match(r'^Logging.*', x), data)
+    return ''.join(data)
 
-print(df['key'].value_counts().head(50))
+
+def prepend_header(data):
+    return 'timestamp' + SEPARATOR + 'key\n' + data
+
+
+def save(path, item):
+    with path.open('w') as f:
+        f.write(item)
+
+
+def main():
+    csv = log_to_csv(Path('logkeys.log'))
+    csv = prepend_header(csv)
+    save(Path('logkeys.csv'), csv)
+
+    df = pd.read_csv(Path('logkeys.csv'), sep=SEPARATOR, engine='python')
+    print(df)
+    print(df['key'].value_counts().head(50))
+
+
+if __name__ == '__main__':
+    main()
